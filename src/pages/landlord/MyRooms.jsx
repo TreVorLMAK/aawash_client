@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Pencil, Trash2, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import API from "../../utils/api";
 import Navbar from "../../components/Navbar";
 
 export default function MyRooms() {
   const [rooms, setRooms] = useState([]);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const fetchRooms = async () => {
     try {
@@ -24,25 +27,25 @@ export default function MyRooms() {
     fetchRooms();
   }, []);
 
-  const deleteRoom = async (roomId) => {
-    const confirm = window.confirm("Are you sure you want to delete this room?");
-    if (!confirm) return;
-
+  const deleteRoom = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API}/landlord/delete-room/${roomId}`, {
+      const res = await fetch(`${API}/landlord/delete-room/${deleteTarget}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
         toast.success("Room deleted");
-        setRooms(rooms.filter((r) => r._id !== roomId));
+        setRooms((prev) => prev.filter((r) => r._id !== deleteTarget));
       } else {
         toast.error("Failed to delete room");
       }
     } catch (err) {
       toast.error("Error deleting room");
+    } finally {
+      setShowModal(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -74,11 +77,17 @@ export default function MyRooms() {
               <p className="text-sm text-blue-600 font-medium">Rs. {room.price}</p>
 
               <div className="flex gap-3 mt-3">
-                <button className="text-blue-600 hover:underline flex items-center gap-1">
+                <Link
+                  to={`/landlord/edit-room/${room._id}`}
+                  className="text-blue-600 hover:underline flex items-center gap-1"
+                >
                   <Pencil size={16} /> Edit
-                </button>
+                </Link>
                 <button
-                  onClick={() => deleteRoom(room._id)}
+                  onClick={() => {
+                    setDeleteTarget(room._id);
+                    setShowModal(true);
+                  }}
                   className="text-red-600 hover:underline flex items-center gap-1"
                 >
                   <Trash2 size={16} /> Delete
@@ -87,6 +96,31 @@ export default function MyRooms() {
             </div>
           ))}
         </div>
+
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+              <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to delete this room? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteRoom}
+                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
