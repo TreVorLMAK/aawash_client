@@ -36,7 +36,7 @@ export default function Navbar() {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const res = await fetch(`${API}/chat/unread/count`, {
+      const res = await fetch(`${API}/messages/unread/count`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
